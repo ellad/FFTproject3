@@ -8,6 +8,7 @@ let mic;
 let fft;
 let audioOn = false;
 let blurVal = 0;
+let glitchRange;
 
 let timer = 0;
 
@@ -18,6 +19,7 @@ function setup() {
     capture = createCapture(VIDEO); // capture webcam
     capture.size(w, h);
     capture.hide();
+    glitchRange = 0.5;
     // setting up audio
     getAudioContext().suspend();
     fft = new p5.FFT();
@@ -37,24 +39,9 @@ function draw() {
     if (audioOn) {
         filter(BLUR, blurVal);
         fft.analyze();
-        if (frameCount % 5 == 0) {
-            if (!mouseIsPressed) {
-                glitch.loadImage(capture);
-            }
-
-            let bassEnergy = fft.getEnergy("bass");
-            // maps glitch to bass energy
-            glitch.limitBytes(map(bassEnergy, 0, 255, 0, 1));
-            glitch.randomBytes(map(bassEnergy, 0, 255, 0, 100));
-            glitch.buildImage();
-        }
-        
-        let bassEnergy = fft.getEnergy("bass");
-        let glitchWidth = map(bassEnergy, 0, 255, windowWidth * 0.5, windowWidth);
-        let glitchHeight = map(bassEnergy, 0, 255, windowHeight * 0.5, windowHeight);
-        
-        image(glitch.image, width / 2, height / 2, glitchWidth, glitchHeight);
+        letGlitch();
     }
+        
     incBlur();
 }
 
@@ -68,6 +55,35 @@ function incBlur() {
 
     }
 }
+
+function letGlitch() {
+    if (frameCount % 5 == 0) {
+        if (!mouseIsPressed) {
+            glitch.loadImage(capture);
+        }
+
+        let bassEnergy = fft.getEnergy("bass");
+        // maps glitch to bass energy
+        glitch.limitBytes(map(bassEnergy, 0, 255, 0, 1));
+        glitch.randomBytes(map(bassEnergy, 0, 255, 0, 100));
+        glitch.buildImage();
+    }
+    
+    let bassEnergy = fft.getEnergy("bass");
+    let glitchWidth = map(bassEnergy, 0, 255, windowWidth * glitchRange, windowWidth);
+    let glitchHeight = map(bassEnergy, 0, 255, windowHeight * glitchRange, windowHeight);
+    
+    image(glitch.image, width / 2, height / 2, glitchWidth, glitchHeight);
+}
+
+function increaseGlitchRange() {
+    inc = .1
+    glitchRange += inc;
+    if (glitchRange > 1 || glitchRange < 0) {
+        inc *= -1;
+    }
+}
+
 
 function mousePressed() {
     audioOn = true;
