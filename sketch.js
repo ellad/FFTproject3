@@ -1,5 +1,4 @@
 let video;
-let glitch;
 let bodyPose;
 let poses = [];
 let connections;
@@ -10,6 +9,18 @@ let globescale;
 let mic;
 let fft;
 let audioOn = false;
+let waveform;
+let spectrum;
+
+let circles1;
+let circles2;
+
+//controls 
+let vol;
+let normVol;
+let volSense = 100;
+let sliderStep = 10;
+let volSenseSlider;
 
 function preload() {
   // Load the bodyPose model
@@ -36,6 +47,13 @@ function setup() {
   mic.start();
   fft.setInput(mic);
 
+  angleMode(DEGREES);
+  circles1 = new Pack(width/2, height/2, 8, 180, 0);
+  circles2 = new Pack(width/2, height/2, 8, 180, 180);
+
+  volSenseSlider = createSlider(0, 200, volSense, sliderStep);
+  volSense = volSenseSlider.value();
+  normVol = vol * volSense;
 }
 
 function mousePressed() {
@@ -44,9 +62,21 @@ function mousePressed() {
 }
 
 function draw() {
-  background(0);
+  background(0, 0, 0, 10);
+  circles1.displayPack();
+  circles1.movePack(1);
+  circles2.displayPack();
+  circles2.movePack(1);
   if (audioOn) {
+
+    vol = mic.getLevel();
+    spectrum = fft.analyze();
+    waveform = fft.waveform();
+
+    waveForm();
+    spectrumF();
     drawSkeleton();
+
   }
 
 }
@@ -98,4 +128,46 @@ function drawSkeleton() {
 function gotPoses(results) {
   // Save the output to the poses variable
   poses = results;
+}
+
+function waveForm() {
+  if (audioOn) {
+    noFill();
+    beginShape();
+    for (let i = 0; i < waveform.length; i++) {
+      let x = map(i, 0, waveform.length, 0, width);
+      let y = map(waveform[i], -1, 1, 0, height);
+      let strokeCol = map(waveform[i], -1, 1, 0, 360);
+      let strokeSat = map(waveform[i], -1, 1, 0, 100);
+
+      stroke(strokeCol, strokeSat, 100);
+      strokeWeight(globescale * 0.01);
+      vertex(x, y);
+
+    }
+    endShape();
+   }
+ }
+
+ function spectrumF() {
+
+  if(audioOn){
+    let rectX
+    let rectY
+    let rectW
+    let rectH
+      for(let i = 0; i < spectrum.length; i++){
+        
+          rectX = map(i, 0, spectrum.length, 0, width);
+          rectY = height;
+          rectW = globescale * 0.05;
+          rectH = -map(spectrum[i], 0, 255, 0, height);
+          noStroke();
+          fill(spectrum[i], 100, 100, 0.1);
+          rect(rectX, rectY, rectW, rectH);
+}
+
+          let rectX2 = width - rectX - rectW;
+          rect(rectX2, rectY, rectW, rectH);
+    }
 }
