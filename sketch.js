@@ -36,9 +36,6 @@ function setup() {
   mic.start();
   fft.setInput(mic);
 
-
-  glitch = new Glitch();
-  glitch.pixelate(1);
 }
 
 function mousePressed() {
