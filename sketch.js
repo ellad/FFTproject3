@@ -183,7 +183,7 @@ function spectrumF() {
 }
 
 function changeColor() {
-  if (timer > 10000) { // 10000 milliseconds = 10 seconds
+  if (mic.getLevel() == 1) { // 10000 milliseconds = 10 seconds
     colorIndex = nextColorIndex;
     nextColorIndex = (nextColorIndex + 1) % colors.length;
     timer = 0; // Reset the timer after changing the color
