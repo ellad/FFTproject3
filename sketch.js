@@ -21,10 +21,19 @@ let normVol;
 let volSense = 100;
 let sliderStep = 10;
 let volSenseSlider;
+/*
+  create an array of possible colors for the skeleton
+  */
+
+let colors = ["#FE86FF", "#FD2CFF", "#C203D3", "#5F0FFF", "#1904DA"];
+let colorIndex = 0;
+let nextColorIndex = 1;
+let timer = 0;
+let colorTransitionProgress = 0;
 
 function preload() {
   // Load the bodyPose model
-  bodyPose = ml5.bodyPose("MoveNet", {flipped : true});
+  bodyPose = ml5.bodyPose("MoveNet", {flipped: true});
 }
 
 function setup() {
@@ -48,8 +57,8 @@ function setup() {
   fft.setInput(mic);
 
   angleMode(DEGREES);
-  circles1 = new Pack(width/2, height/2, 8, 180, 0);
-  circles2 = new Pack(width/2, height/2, 8, 180, 180);
+  circles1 = new Pack(width / 2, height / 2, 8, 180, 0);
+  circles2 = new Pack(width / 2, height / 2, 8, 180, 180);
 
   volSenseSlider = createSlider(0, 200, volSense, sliderStep);
   volSense = volSenseSlider.value();
@@ -63,12 +72,13 @@ function mousePressed() {
 
 function draw() {
   background(0, 0, 0, 10);
+  strokeWeight(1);
   circles1.displayPack();
   circles1.movePack(1);
   circles2.displayPack();
   circles2.movePack(1);
-  if (audioOn) {
 
+  if (audioOn) {
     vol = mic.getLevel();
     spectrum = fft.analyze();
     waveform = fft.waveform();
@@ -76,53 +86,56 @@ function draw() {
     waveForm();
     spectrumF();
     drawSkeleton();
-
   }
 
+  timer += deltaTime; // Increment the timer based on the elapsed time
+  changeColor(); // Call the changeColor function to update the color
 }
 
 function drawSkeleton() {
-
   fft.analyze();
-    console.log('audio on');
-    let bassEnergy = fft.getEnergy('bass');
-    let weight = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
-    let dotSize = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
+  console.log('audio on');
+  let bassEnergy = fft.getEnergy('bass');
+  let weight = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
+  let dotSize = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
 
-    // Draw the skeleton connections
-    for (let i = 0; i < poses.length; i++) {
-      let pose = poses[i];
-      for (let j = 0; j < connections.length; j++) {
-        let pointAIndex = connections[j][0];
-        let pointBIndex = connections[j][1];
-        let pointA = pose.keypoints[pointAIndex];
-        let pointB = pose.keypoints[pointBIndex];
-        // Only draw a line if both points are confident enough
-        if (pointA.confidence > 0.1 && pointB.confidence > 0.1) {
-          console.log(weight, bassEnergy);
-          stroke(0, 0, 255);
-          strokeWeight(weight);
-          line(pointA.x, pointA.y, pointB.x, pointB.y);
-        }
+  // Calculate the current color by interpolating between the current and next colors
+  let currentColor = lerpColor(color(colors[colorIndex]), color(colors[nextColorIndex]), colorTransitionProgress);
+
+  // Draw the skeleton connections
+  for (let i = 0; i < poses.length; i++) {
+    let pose = poses[i];
+    for (let j = 0; j < connections.length; j++) {
+      let pointAIndex = connections[j][0];
+      let pointBIndex = connections[j][1];
+      let pointA = pose.keypoints[pointAIndex];
+      let pointB = pose.keypoints[pointBIndex];
+      // Only draw a line if both points are confident enough
+      if (pointA.confidence > 0.1 && pointB.confidence > 0.1) {
+        console.log(weight, bassEnergy);
+        // Use the interpolated color
+        stroke(currentColor);
+        strokeWeight(weight);
+        line(pointA.x, pointA.y, pointB.x, pointB.y);
       }
     }
+  }
 
-    // Draw all the tracked landmark points
-    for (let i = 0; i < poses.length; i++) {
-      let pose = poses[i];
-      for (let j = 0; j < pose.keypoints.length; j++) {
-        let keypoint = pose.keypoints[j];
-        // Only draw a circle if the keypoint's confidence is bigger than 0.1
-        if (keypoint.confidence > 0.1) {
-          console.log(dotSize);
-          fill(255, 0, 0);
-          noStroke();
-          circle(keypoint.x, keypoint.y, dotSize);
-        }
+  // Draw all the tracked landmark points
+  for (let i = 0; i < poses.length; i++) {
+    let pose = poses[i];
+    for (let j = 0; j < pose.keypoints.length; j++) {
+      let keypoint = pose.keypoints[j];
+      // Only draw a circle if the keypoint's confidence is bigger than 0.1
+      if (keypoint.confidence > 0.1) {
+        console.log(dotSize);
+        fill(currentColor);
+        noStroke();
+        circle(keypoint.x, keypoint.y, dotSize);
       }
     }
-  } 
-
+  }
+}
 
 // Callback function for when bodyPose outputs data
 function gotPoses(results) {
@@ -143,31 +156,41 @@ function waveForm() {
       stroke(strokeCol, strokeSat, 100);
       strokeWeight(globescale * 0.01);
       vertex(x, y);
-
     }
     endShape();
-   }
- }
-
- function spectrumF() {
-
-  if(audioOn){
-    let rectX
-    let rectY
-    let rectW
-    let rectH
-      for(let i = 0; i < spectrum.length; i++){
-        
-          rectX = map(i, 0, spectrum.length, 0, width);
-          rectY = height;
-          rectW = globescale * 0.05;
-          rectH = -map(spectrum[i], 0, 255, 0, height);
-          noStroke();
-          fill(spectrum[i], 100, 100, 0.1);
-          rect(rectX, rectY, rectW, rectH);
+  }
 }
 
-          let rectX2 = width - rectX - rectW;
-          rect(rectX2, rectY, rectW, rectH);
+function spectrumF() {
+  if (audioOn) {
+    let rectX;
+    let rectY;
+    let rectW;
+    let rectH;
+    for (let i = 0; i < spectrum.length; i++) {
+      rectX = map(i, 0, spectrum.length, 0, width);
+      rectY = height;
+      rectW = globescale * 0.05;
+      rectH = -map(spectrum[i], 0, 255, 0, height);
+      noStroke();
+      fill(spectrum[i], 100, 100, 0.1);
+      rect(rectX, rectY, rectW, rectH);
+
+      let rectX2 = width - rectX - rectW;
+      rect(rectX2, rectY, rectW, rectH);
     }
+  }
+}
+
+function changeColor() {
+  if (timer > 10000) { // 10000 milliseconds = 10 seconds
+    colorIndex = nextColorIndex;
+    nextColorIndex = (nextColorIndex + 1) % colors.length;
+    timer = 0; // Reset the timer after changing the color
+    colorTransitionProgress = 0; // Reset the transition progress
+  }
+
+  // Increment the transition progress
+  colorTransitionProgress += deltaTime / 10000; // Adjust the transition speed as needed
+  colorTransitionProgress = constrain(colorTransitionProgress, 0, 1); // Ensure the progress stays within [0, 1]
 }
