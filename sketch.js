@@ -12,6 +12,9 @@ let audioOn = false;
 let waveform;
 let spectrum;
 
+let sensitivity = 0.5; // Sensitivity to volume changes
+let sensitivitySlider; // Slider to adjust sensitivity
+
 let circles1;
 let circles2;
 
@@ -60,9 +63,9 @@ function setup() {
   circles1 = new Pack(width / 2, height / 2, 8, 180, 0);
   circles2 = new Pack(width / 2, height / 2, 8, 180, 180);
 
-  volSenseSlider = createSlider(0, 200, volSense, sliderStep);
-  volSense = volSenseSlider.value();
-  normVol = vol * volSense;
+
+  sensitivitySlider = createSlider(0, 1, sensitivity, 0.01);
+  sensitivitySlider.id('sensitivitySlider'); // Assign an ID to the slider
 }
 
 function mousePressed() {
@@ -96,8 +99,8 @@ function drawSkeleton() {
   fft.analyze();
   console.log('audio on');
   let bassEnergy = fft.getEnergy('bass');
-  let weight = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
-  let dotSize = map(bassEnergy, 0, 255, 1, 30); // Adjust the range as needed
+  let weight = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
+  let dotSize = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
 
   // Calculate the current color by interpolating between the current and next colors
   let currentColor = lerpColor(color(colors[colorIndex]), color(colors[nextColorIndex]), colorTransitionProgress);
@@ -183,7 +186,7 @@ function spectrumF() {
 }
 
 function changeColor() {
-  if (mic.getLevel() == 1) { // 10000 milliseconds = 10 seconds
+  if (mic.getLevel() >= 0.7) { // 10000 milliseconds = 10 seconds
     colorIndex = nextColorIndex;
     nextColorIndex = (nextColorIndex + 1) % colors.length;
     timer = 0; // Reset the timer after changing the color
