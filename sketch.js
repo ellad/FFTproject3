@@ -34,6 +34,28 @@ let nextColorIndex = 1;
 let timer = 0;
 let colorTransitionProgress = 0;
 
+let sensitivity = 0.5; // Sensitivity to volume changes
+let sensitivitySlider; // Slider to adjust sensitivity
+
+let circles1;
+let circles2;
+
+//controls 
+let vol;
+let normVol;
+let volSense = 100;
+let sliderStep = 10;
+let volSenseSlider;
+/*
+  create an array of possible colors for the skeleton
+  */
+
+let colors = ["#FE86FF", "#FD2CFF", "#C203D3", "#5F0FFF", "#1904DA"];
+let colorIndex = 0;
+let nextColorIndex = 1;
+let timer = 0;
+let colorTransitionProgress = 0;
+
 function preload() {
   // Load the bodyPose model
   bodyPose = ml5.bodyPose("MoveNet", {flipped: true});
@@ -63,7 +85,6 @@ function setup() {
   circles1 = new Pack(width / 2, height / 2, 8, 180, 0);
   circles2 = new Pack(width / 2, height / 2, 8, 180, 180);
 
-
   sensitivitySlider = createSlider(0, 1, sensitivity, 0.01);
   sensitivitySlider.id('sensitivitySlider'); // Assign an ID to the slider
 }
@@ -86,8 +107,7 @@ function draw() {
     spectrum = fft.analyze();
     waveform = fft.waveform();
 
-    waveForm();
-    spectrumF();
+
     drawSkeleton();
   }
 
@@ -97,7 +117,7 @@ function draw() {
 
 function drawSkeleton() {
   fft.analyze();
-  console.log('audio on');
+
   let bassEnergy = fft.getEnergy('bass');
   let weight = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
   let dotSize = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
@@ -115,7 +135,7 @@ function drawSkeleton() {
       let pointB = pose.keypoints[pointBIndex];
       // Only draw a line if both points are confident enough
       if (pointA.confidence > 0.1 && pointB.confidence > 0.1) {
-        console.log(weight, bassEnergy);
+
         // Use the interpolated color
         stroke(currentColor);
         strokeWeight(weight);
@@ -131,7 +151,7 @@ function drawSkeleton() {
       let keypoint = pose.keypoints[j];
       // Only draw a circle if the keypoint's confidence is bigger than 0.1
       if (keypoint.confidence > 0.1) {
-        console.log(dotSize);
+
         fill(currentColor);
         noStroke();
         circle(keypoint.x, keypoint.y, dotSize);
@@ -140,6 +160,28 @@ function drawSkeleton() {
   }
 }
 
+
+// Callback function for when bodyPose outputs data
+function gotPoses(results) {
+  // Save the output to the poses variable
+  poses = results;
+}
+
+function changeColor() {
+  sensitivity = sensitivitySlider.value(); // Update sensitivity based on slider value
+  let volumeThreshold = sensitivity * 0.1; // Adjust the threshold based on sensitivity
+
+  if (mic.getLevel() >= volumeThreshold) { 
+    colorIndex = nextColorIndex;
+    nextColorIndex = (nextColorIndex + 1) % colors.length;
+    timer = 0; // Reset the timer after changing the color
+    colorTransitionProgress = 0; // Reset the transition progress
+  }
+
+  // Increment the transition progress
+  colorTransitionProgress += deltaTime / 2000; // Adjust the transition speed as needed
+  colorTransitionProgress = constrain(colorTransitionProgress, 0, 1); // Ensure the progress stays within [0, 1]
+}
 // Callback function for when bodyPose outputs data
 function gotPoses(results) {
   // Save the output to the poses variable
