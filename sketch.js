@@ -34,28 +34,6 @@ let nextColorIndex = 1;
 let timer = 0;
 let colorTransitionProgress = 0;
 
-let sensitivity = 0.5; // Sensitivity to volume changes
-let sensitivitySlider; // Slider to adjust sensitivity
-
-let circles1;
-let circles2;
-
-//controls 
-let vol;
-let normVol;
-let volSense = 100;
-let sliderStep = 10;
-let volSenseSlider;
-/*
-  create an array of possible colors for the skeleton
-  */
-
-let colors = ["#FE86FF", "#FD2CFF", "#C203D3", "#5F0FFF", "#1904DA"];
-let colorIndex = 0;
-let nextColorIndex = 1;
-let timer = 0;
-let colorTransitionProgress = 0;
-
 function preload() {
   // Load the bodyPose model
   bodyPose = ml5.bodyPose("MoveNet", {flipped: true});
