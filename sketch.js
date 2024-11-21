@@ -9,6 +9,30 @@ let globescale;
 let mic;
 let fft;
 let audioOn = false;
+let waveform;
+let spectrum;
+
+let sensitivity = 0.5; // Sensitivity to volume changes
+let sensitivitySlider; // Slider to adjust sensitivity
+
+let circles1;
+let circles2;
+
+//controls 
+let vol;
+let normVol;
+let volSense = 100;
+let sliderStep = 10;
+let volSenseSlider;
+/*
+  create an array of possible colors for the skeleton
+  */
+
+let colors = ["#FE86FF", "#FD2CFF", "#C203D3", "#5F0FFF", "#1904DA"];
+let colorIndex = 0;
+let nextColorIndex = 1;
+let timer = 0;
+let colorTransitionProgress = 0;
 
 let sensitivity = 0.5; // Sensitivity to volume changes
 let sensitivitySlider; // Slider to adjust sensitivity
@@ -83,6 +107,7 @@ function draw() {
     spectrum = fft.analyze();
     waveform = fft.waveform();
 
+
     drawSkeleton();
   }
 
@@ -92,6 +117,7 @@ function draw() {
 
 function drawSkeleton() {
   fft.analyze();
+
   let bassEnergy = fft.getEnergy('bass');
   let weight = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
   let dotSize = map(bassEnergy, 0, 255, 1, 50); // Adjust the range as needed
@@ -109,6 +135,7 @@ function drawSkeleton() {
       let pointB = pose.keypoints[pointBIndex];
       // Only draw a line if both points are confident enough
       if (pointA.confidence > 0.1 && pointB.confidence > 0.1) {
+
         // Use the interpolated color
         stroke(currentColor);
         strokeWeight(weight);
@@ -124,6 +151,7 @@ function drawSkeleton() {
       let keypoint = pose.keypoints[j];
       // Only draw a circle if the keypoint's confidence is bigger than 0.1
       if (keypoint.confidence > 0.1) {
+
         fill(currentColor);
         noStroke();
         circle(keypoint.x, keypoint.y, dotSize);
@@ -131,6 +159,7 @@ function drawSkeleton() {
     }
   }
 }
+
 
 // Callback function for when bodyPose outputs data
 function gotPoses(results) {
@@ -157,4 +186,56 @@ function changeColor() {
 function gotPoses(results) {
   // Save the output to the poses variable
   poses = results;
+}
+
+function waveForm() {
+  if (audioOn) {
+    noFill();
+    beginShape();
+    for (let i = 0; i < waveform.length; i++) {
+      let x = map(i, 0, waveform.length, 0, width);
+      let y = map(waveform[i], -1, 1, 0, height);
+      let strokeCol = map(waveform[i], -1, 1, 0, 360);
+      let strokeSat = map(waveform[i], -1, 1, 0, 100);
+
+      stroke(strokeCol, strokeSat, 100);
+      strokeWeight(globescale * 0.01);
+      vertex(x, y);
+    }
+    endShape();
+  }
+}
+
+function spectrumF() {
+  if (audioOn) {
+    let rectX;
+    let rectY;
+    let rectW;
+    let rectH;
+    for (let i = 0; i < spectrum.length; i++) {
+      rectX = map(i, 0, spectrum.length, 0, width);
+      rectY = height;
+      rectW = globescale * 0.05;
+      rectH = -map(spectrum[i], 0, 255, 0, height);
+      noStroke();
+      fill(spectrum[i], 100, 100, 0.1);
+      rect(rectX, rectY, rectW, rectH);
+
+      let rectX2 = width - rectX - rectW;
+      rect(rectX2, rectY, rectW, rectH);
+    }
+  }
+}
+
+function changeColor() {
+  if (mic.getLevel() >= 0.7) { // 10000 milliseconds = 10 seconds
+    colorIndex = nextColorIndex;
+    nextColorIndex = (nextColorIndex + 1) % colors.length;
+    timer = 0; // Reset the timer after changing the color
+    colorTransitionProgress = 0; // Reset the transition progress
+  }
+
+  // Increment the transition progress
+  colorTransitionProgress += deltaTime / 10000; // Adjust the transition speed as needed
+  colorTransitionProgress = constrain(colorTransitionProgress, 0, 1); // Ensure the progress stays within [0, 1]
 }
